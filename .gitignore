@@ -1,0 +1,15 @@
+# Database file — don't push your local data to GitHub
+watchlist.db
+
+# Python cache files — auto-generated, not needed in the repo
+__pycache__/
+*.pyc
+
+# Environment/config files that may contain secrets
+.env
+
+# macOS system files
+.DS_Store
+
+# Virtual environment folder (if you ever create one)
+venv/

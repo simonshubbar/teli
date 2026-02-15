@@ -1,0 +1,1027 @@
+/*
+ * Teli — iOS Design System
+ *
+ * Follows Apple Human Interface Guidelines:
+ * - SF Pro system font stack
+ * - iOS system colours and backgrounds
+ * - Translucent navigation & tab bars with vibrancy
+ * - Grouped inset card layout
+ * - Clean, minimal, generous whitespace
+ * - True black dark mode / system grey light mode
+ */
+
+/* ===== Reset — override any Pico CSS defaults ===== */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* ===== Colour System — Dark Mode (default, matches iOS dark) ===== */
+
+:root {
+    /* Backgrounds — iOS system backgrounds */
+    --bg-primary: #000000;
+    --bg-secondary: #1C1C1E;
+    --bg-tertiary: #2C2C2E;
+    --bg-grouped: #000000;
+
+    /* Elevated surfaces (cards, modals) */
+    --surface: #1C1C1E;
+    --surface-secondary: #2C2C2E;
+
+    /* Separator */
+    --separator: rgba(84, 84, 88, 0.65);
+
+    /* Text — iOS system labels */
+    --text-primary: #FFFFFF;
+    --text-secondary: rgba(235, 235, 245, 0.6);
+    --text-tertiary: rgba(235, 235, 245, 0.3);
+
+    /* iOS system tint colours */
+    --tint: #0A84FF;                /* iOS blue */
+    --tint-purple: #BF5AF2;        /* iOS purple */
+    --color-want: #FF9F0A;         /* iOS orange */
+    --color-progress: #5E5CE6;     /* iOS indigo */
+    --color-watched: #30D158;      /* iOS green */
+    --color-delete: #FF453A;       /* iOS red */
+
+    /* Bars */
+    --bar-bg: rgba(30, 30, 30, 0.85);
+    --bar-border: rgba(84, 84, 88, 0.65);
+
+    /* Card shape */
+    --card-radius: 12px;
+    --input-radius: 10px;
+
+    /* No-poster placeholder */
+    --no-poster-bg: #2C2C2E;
+    --no-poster-text: rgba(235, 235, 245, 0.3);
+}
+
+/* ===== Light Mode — iOS system colours ===== */
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg-primary: #FFFFFF;
+        --bg-secondary: #F2F2F7;
+        --bg-tertiary: #FFFFFF;
+        --bg-grouped: #F2F2F7;
+
+        --surface: #FFFFFF;
+        --surface-secondary: #F2F2F7;
+
+        --separator: rgba(60, 60, 67, 0.29);
+
+        --text-primary: #000000;
+        --text-secondary: rgba(60, 60, 67, 0.6);
+        --text-tertiary: rgba(60, 60, 67, 0.3);
+
+        --tint: #007AFF;
+        --tint-purple: #AF52DE;
+        --color-want: #FF9500;
+        --color-progress: #5856D6;
+        --color-watched: #34C759;
+        --color-delete: #FF3B30;
+
+        --bar-bg: rgba(249, 249, 249, 0.94);
+        --bar-border: rgba(60, 60, 67, 0.29);
+
+        --no-poster-bg: #F2F2F7;
+        --no-poster-text: rgba(60, 60, 67, 0.3);
+    }
+}
+
+/* ===== Global / Body ===== */
+
+body {
+    /* SF Pro system font — falls back gracefully on all platforms */
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+                 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: var(--bg-grouped);
+    min-height: 100vh;
+    color: var(--text-primary);
+    margin: 0;
+    padding: 0;
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Override Pico */
+    --pico-background-color: transparent;
+    --pico-font-family: inherit;
+}
+
+/* ===== Typography — iOS scale ===== */
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: inherit;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    --pico-color: var(--text-primary);
+}
+
+p, span, a, li, label, small, td, th {
+    color: var(--text-primary);
+}
+
+small, .text-secondary {
+    color: var(--text-secondary);
+}
+
+a {
+    color: var(--tint);
+    text-decoration: none;
+}
+
+/* ===== iOS Navigation Bar ===== */
+
+.nav-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bar-bg);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 0.5px solid var(--bar-border);
+}
+
+.nav-bar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    height: 44px;
+    padding: 0 16px;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.nav-title {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.01em;
+    text-align: center;
+}
+
+.nav-back {
+    position: absolute;
+    left: 16px;
+    font-size: 17px;
+    font-weight: 400;
+    color: var(--tint);
+    text-decoration: none;
+}
+
+/* ===== iOS Segmented Control ===== */
+
+.segmented-control {
+    display: flex;
+    background: var(--surface-secondary);
+    border-radius: 9px;
+    padding: 2px;
+    margin-bottom: 16px;
+}
+
+.segment {
+    flex: 1;
+    text-align: center;
+    padding: 7px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    text-decoration: none;
+    border-radius: 7px;
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.segment.active {
+    background: var(--surface);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+    font-weight: 600;
+}
+
+@media (prefers-color-scheme: light) {
+    .segment.active {
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+}
+
+/* ===== iOS Tab Bar ===== */
+
+.tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    height: 49px;
+    padding-top: 5px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--bar-bg);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-top: 0.5px solid var(--bar-border);
+}
+
+.tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    text-decoration: none;
+    color: var(--text-secondary);
+    -webkit-tap-highlight-color: transparent;
+    padding: 2px 20px;
+    transition: color 0.15s ease;
+}
+
+.tab-item svg {
+    width: 25px;
+    height: 25px;
+}
+
+.tab-item span {
+    font-size: 10px;
+    font-weight: 500;
+    color: inherit;
+}
+
+.tab-item.active {
+    color: var(--tint);
+}
+
+/* ===== Container ===== */
+
+.container {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 12px 16px 0;
+}
+
+/* ===== Flash Messages — iOS style ===== */
+
+.flash-message {
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    border-radius: var(--card-radius);
+    background: var(--surface);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: slideDown 0.3s ease;
+    font-size: 15px;
+}
+
+.flash-success { border-left: 3px solid var(--color-watched); }
+.flash-info    { border-left: 3px solid var(--tint); }
+.flash-error   { border-left: 3px solid var(--color-delete); }
+
+.flash-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 4px;
+    color: var(--text-tertiary);
+    margin: 0;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Section Headers ===== */
+
+.section-block {
+    margin-bottom: 24px;
+}
+
+.section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.section-label {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.section-count {
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.empty-message {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 24px 0;
+    font-size: 15px;
+}
+
+/* ===== Grouped Cards — iOS inset grouped style ===== */
+
+.grouped-card {
+    background: var(--surface);
+    border-radius: var(--card-radius);
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.group-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    color: var(--text-primary);
+}
+
+.group-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0 0 12px 0;
+}
+
+/* ===== Horizontal Scroll Row ===== */
+
+.scroll-row {
+    display: flex;
+    overflow-x: auto;
+    gap: 12px;
+    padding-bottom: 4px;
+    scroll-snap-type: x mandatory;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scroll-row::-webkit-scrollbar {
+    display: none;
+}
+
+.scroll-row .item-card {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+    width: 130px;
+}
+
+/* ===== Poster Grid ===== */
+
+.poster-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+/* ===== Item Card ===== */
+
+.item-card {
+    cursor: pointer;
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+    background: var(--surface);
+    transition: transform 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.item-card:active {
+    transform: scale(0.96);
+}
+
+.card-poster img {
+    width: 100%;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    display: block;
+}
+
+.card-info {
+    padding: 6px 8px 8px;
+}
+
+.card-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 2px 0;
+    line-height: 1.3;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-meta {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.card-year {
+    color: var(--text-secondary);
+}
+
+/* ===== Media Badge ===== */
+
+.media-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.media-badge.movie {
+    background: rgba(175, 82, 222, 0.12);
+    color: var(--tint-purple);
+}
+
+.media-badge.tv {
+    background: rgba(88, 86, 214, 0.12);
+    color: var(--color-progress);
+}
+
+/* ===== Status Pill ===== */
+
+.status-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.status-want {
+    background: rgba(255, 159, 10, 0.12);
+    color: var(--color-want);
+}
+
+.status-progress {
+    background: rgba(94, 92, 230, 0.12);
+    color: var(--color-progress);
+}
+
+.status-watched {
+    background: rgba(48, 209, 88, 0.12);
+    color: var(--color-watched);
+}
+
+/* ===== No Poster ===== */
+
+.no-poster {
+    width: 100%;
+    aspect-ratio: 2/3;
+    background: var(--no-poster-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--no-poster-text);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.no-poster.large {
+    min-height: 250px;
+    border-radius: var(--card-radius);
+}
+
+.no-poster.small {
+    width: 50px;
+    aspect-ratio: 2/3;
+    font-size: 9px;
+    border-radius: 6px;
+}
+
+/* ===== Filter Bar ===== */
+
+.filter-bar {
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.ios-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--surface);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 28px 8px 12px;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--tint);
+    font-weight: 500;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23007AFF'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    margin-bottom: 0;
+}
+
+/* ===== iOS Buttons ===== */
+
+.ios-btn {
+    display: block;
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 17px;
+    font-weight: 600;
+    font-family: inherit;
+    border: none;
+    border-radius: var(--card-radius);
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: opacity 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ios-btn:active {
+    opacity: 0.7;
+}
+
+.btn-primary {
+    background: var(--tint);
+    color: #FFFFFF;
+}
+
+.btn-secondary {
+    background: var(--surface-secondary);
+    color: var(--tint);
+}
+
+.btn-want {
+    background: var(--color-want);
+    color: #FFFFFF;
+}
+
+.btn-progress {
+    background: var(--color-progress);
+    color: #FFFFFF;
+}
+
+.btn-watched {
+    background: var(--color-watched);
+    color: #FFFFFF;
+}
+
+.btn-danger {
+    background: none;
+    color: var(--color-delete);
+    font-weight: 500;
+}
+
+.btn-small {
+    display: inline-block;
+    width: auto;
+    padding: 8px 16px;
+    font-size: 15px;
+}
+
+.btn-full {
+    width: 100%;
+}
+
+/* ===== iOS Form Inputs ===== */
+
+.ios-input,
+.ios-search {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 17px;
+    font-family: inherit;
+    background: var(--bg-tertiary);
+    border: none;
+    border-radius: var(--input-radius);
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    outline: none;
+}
+
+.ios-input:focus,
+.ios-search:focus {
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
+}
+
+.ios-search {
+    background: var(--surface);
+    border-radius: var(--input-radius);
+}
+
+textarea.ios-input {
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.5;
+}
+
+label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+/* ===== Search Page ===== */
+
+.search-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.search-bar .ios-search {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.search-bar .ios-btn {
+    width: auto;
+    flex-shrink: 0;
+}
+
+.results-count {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--separator);
+    border-radius: var(--card-radius);
+    overflow: hidden;
+}
+
+.search-result {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: var(--surface);
+}
+
+.result-poster img {
+    width: 65px;
+    border-radius: 8px;
+}
+
+.result-poster .no-poster {
+    width: 65px;
+    border-radius: 8px;
+}
+
+.result-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.result-title {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 2px 0;
+    color: var(--text-primary);
+}
+
+.result-year {
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.result-overview {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 6px 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.add-form {
+    display: inline;
+}
+
+.btn-on-list {
+    color: var(--color-watched);
+    font-weight: 600;
+    font-size: 14px;
+}
+
+/* ===== Detail Page ===== */
+
+.detail-page {
+    padding-bottom: 8px;
+}
+
+.detail-poster {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.detail-poster img {
+    width: 200px;
+    border-radius: var(--card-radius);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.detail-title-row {
+    text-align: center;
+    margin-bottom: 4px;
+}
+
+.detail-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.detail-year {
+    font-size: 17px;
+    color: var(--text-secondary);
+}
+
+.detail-meta-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.detail-overview {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* Providers */
+.provider-group {
+    margin-bottom: 10px;
+}
+
+.provider-group:last-child {
+    margin-bottom: 0;
+}
+
+.provider-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.provider-logos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.provider-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-tertiary);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.provider-chip img {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+}
+
+.no-providers {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Status buttons */
+.status-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.inline-form {
+    margin: 0;
+}
+
+/* Detail form */
+.detail-form .ios-btn {
+    margin-top: 4px;
+}
+
+.danger-zone {
+    background: transparent;
+    padding: 0;
+    text-align: center;
+}
+
+.danger-zone .ios-btn {
+    background: var(--surface);
+    border-radius: var(--card-radius);
+}
+
+/* ===== Import Page ===== */
+
+.import-results {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.import-item {
+    padding: 12px;
+}
+
+.import-query {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.import-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.import-checkbox input[type="checkbox"] {
+    margin: 0;
+    width: 20px;
+    height: 20px;
+    accent-color: var(--tint);
+}
+
+.import-match-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.import-poster {
+    width: 44px;
+    border-radius: 6px;
+}
+
+.import-match-info div strong {
+    font-size: 15px;
+}
+
+.import-no-match {
+    color: var(--text-tertiary);
+    font-size: 14px;
+}
+
+.already-added {
+    color: var(--color-watched);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.import-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.import-actions .ios-btn {
+    flex: 1;
+}
+
+/* ===== App Footer ===== */
+
+.app-footer {
+    text-align: center;
+    padding: 16px 0 8px;
+}
+
+.app-footer small {
+    color: var(--text-tertiary);
+    font-size: 12px;
+}
+
+.app-footer a {
+    color: var(--text-tertiary);
+}
+
+/* ===== Desktop / Tablet ===== */
+
+@media (min-width: 769px) {
+    body {
+        padding-bottom: 0;
+    }
+
+    .tab-bar {
+        position: sticky;
+        top: 44px;
+        bottom: auto;
+        height: auto;
+        padding: 6px 16px;
+        justify-content: center;
+        gap: 32px;
+    }
+
+    .tab-item {
+        flex-direction: row;
+        gap: 6px;
+    }
+
+    .tab-item svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .tab-item span {
+        font-size: 14px;
+    }
+
+    .container {
+        padding: 16px 24px 0;
+    }
+
+    .poster-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 16px;
+    }
+
+    .scroll-row .item-card {
+        width: 150px;
+    }
+
+    .card-title {
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        font-size: 14px;
+    }
+
+    /* Detail page — side by side */
+    .detail-page {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .detail-poster img {
+        width: 240px;
+    }
+
+    .detail-title {
+        font-size: 28px;
+    }
+
+    /* Status buttons inline */
+    .status-buttons {
+        flex-direction: row;
+    }
+
+    .status-buttons .inline-form {
+        flex: 1;
+    }
+
+    /* Desktop hover states */
+    .item-card:hover {
+        transform: scale(1.03);
+    }
+
+    .ios-btn:hover {
+        opacity: 0.85;
+    }
+
+    .search-result:hover {
+        background: var(--surface-secondary);
+    }
+}

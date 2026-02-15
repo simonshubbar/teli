@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Search — Teli{% endblock %}
+{% block page %}search{% endblock %}
+{% block nav_title %}Search{% endblock %}
+
+{% block content %}
+
+<form method="get" action="{{ url_for('search') }}" role="search">
+    <div class="search-bar">
+        <input type="search"
+               name="q"
+               value="{{ query }}"
+               placeholder="Movies, TV shows..."
+               autofocus
+               aria-label="Search"
+               class="ios-search">
+        <button type="submit" class="ios-btn btn-primary">Search</button>
+    </div>
+</form>
+
+{% if query %}
+    {% if results %}
+        <p class="results-count">{{ results|length }} result{{ 's' if results|length != 1 }} for "{{ query }}"</p>
+
+        <div class="search-results">
+            {% for r in results %}
+                <article class="search-result">
+                    <div class="result-poster">
+                        {% if r.poster_url %}
+                            <img src="{{ r.poster_url }}" alt="{{ r.title }} poster" loading="lazy">
+                        {% else %}
+                            <div class="no-poster small">No Poster</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="result-info">
+                        <h3 class="result-title">{{ r.title }} {% if r.year %}<span class="result-year">({{ r.year }})</span>{% endif %}</h3>
+                        <span class="media-badge {{ r.media_type }}">{{ 'Movie' if r.media_type == 'movie' else 'TV Show' }}</span>
+                        <p class="result-overview">{{ r.overview[:150] }}{% if r.overview|length > 150 %}...{% endif %}</p>
+
+                        {% if r.on_list %}
+                            <a href="{{ url_for('detail', item_id=r.list_id) }}" class="btn-on-list">
+                                On your list &rarr;
+                            </a>
+                        {% else %}
+                            <form method="post" action="{{ url_for('add') }}" class="add-form">
+                                <input type="hidden" name="tmdb_id" value="{{ r.tmdb_id }}">
+                                <input type="hidden" name="media_type" value="{{ r.media_type }}">
+                                <input type="hidden" name="title" value="{{ r.title }}">
+                                <input type="hidden" name="year" value="{{ r.year }}">
+                                <input type="hidden" name="poster_path" value="{{ r.poster_path or '' }}">
+                                <input type="hidden" name="overview" value="{{ r.overview }}">
+                                <button type="submit" class="ios-btn btn-small btn-primary">+ Add</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-message">No results for "{{ query }}". Try a different spelling?</p>
+    {% endif %}
+{% endif %}
+{% endblock %}

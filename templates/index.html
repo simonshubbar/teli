@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}My List — Teli{% endblock %}
+{% block page %}home{% endblock %}
+{% block nav_title %}My List{% endblock %}
+
+{% block content %}
+
+<!-- iOS-style segmented control — filter by media type -->
+<div class="segmented-control">
+    <a href="{{ url_for('index', provider=provider_filter) }}"
+       class="segment {{ 'active' if not media_filter }}">All</a>
+    <a href="{{ url_for('index', media='movie', provider=provider_filter) }}"
+       class="segment {{ 'active' if media_filter == 'movie' }}">Movies</a>
+    <a href="{{ url_for('index', media='tv', provider=provider_filter) }}"
+       class="segment {{ 'active' if media_filter == 'tv' }}">TV Shows</a>
+</div>
+
+{% if all_providers %}
+<div class="filter-bar">
+    <form method="get" action="{{ url_for('index') }}">
+        <input type="hidden" name="media" value="{{ media_filter }}">
+        <select name="provider" onchange="this.form.submit()" aria-label="Filter by streaming service" class="ios-select">
+            <option value="">All Services</option>
+            {% for p in all_providers %}
+                <option value="{{ p }}" {% if provider_filter == p %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+{% endif %}
+
+<section class="section-block" id="progress">
+    <div class="section-header">
+        <h2 class="section-label">In Progress</h2>
+        <span class="section-count">{{ items.progress|length }}</span>
+    </div>
+    {% if items.progress %}
+        <div class="scroll-row">
+            {% for item in items.progress %}
+                {% include "_card.html" %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-message">Nothing in progress right now.</p>
+    {% endif %}
+</section>
+
+<section class="section-block" id="want">
+    <div class="section-header">
+        <h2 class="section-label">Want to Watch</h2>
+        <span class="section-count">{{ items.want|length }}</span>
+    </div>
+    {% if items.want %}
+        <div class="poster-grid">
+            {% for item in items.want %}
+                {% include "_card.html" %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-message">
+            No items yet. <a href="{{ url_for('search') }}">Search for something to watch!</a>
+        </p>
+    {% endif %}
+</section>
+
+<section class="section-block" id="watched">
+    <div class="section-header">
+        <h2 class="section-label">Watched</h2>
+        <span class="section-count">{{ items.watched|length }}</span>
+    </div>
+    {% if items.watched %}
+        <div class="poster-grid">
+            {% for item in items.watched %}
+                {% include "_card.html" %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="empty-message">You haven't marked anything as watched yet.</p>
+    {% endif %}
+</section>
+
+<footer class="app-footer">
+    <small>Data provided by <a href="https://www.themoviedb.org/" target="_blank">TMDB</a></small>
+</footer>
+
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }} — Teli{% endblock %}
+{% block page %}home{% endblock %}
+{% block nav_title %}{{ item.title }}{% endblock %}
+{% block nav_left %}<a href="{{ url_for('index') }}" class="nav-back">&lsaquo; Back</a>{% endblock %}
+
+{% block content %}
+<div class="detail-page">
+    <div class="detail-poster">
+        {% if item.poster_path %}
+            <img src="{{ image_base }}{{ item.poster_path }}" alt="{{ item.title }} poster">
+        {% else %}
+            <div class="no-poster large">No Poster</div>
+        {% endif %}
+    </div>
+
+    <div class="detail-title-row">
+        <h1 class="detail-title">{{ item.title }}</h1>
+        {% if item.year %}<span class="detail-year">{{ item.year }}</span>{% endif %}
+    </div>
+
+    <div class="detail-meta-row">
+        <span class="media-badge {{ item.media_type }}">{{ 'Movie' if item.media_type == 'movie' else 'TV Show' }}</span>
+        {% if item.status == 'want' %}
+            <span class="status-pill status-want">Want to Watch</span>
+        {% elif item.status == 'progress' %}
+            <span class="status-pill status-progress">In Progress</span>
+        {% else %}
+            <span class="status-pill status-watched">Watched</span>
+        {% endif %}
+    </div>
+
+    {% if item.overview %}
+        <div class="grouped-card">
+            <p class="detail-overview">{{ item.overview }}</p>
+        </div>
+    {% endif %}
+
+    {% if providers.stream or providers.rent or providers.buy %}
+        <div class="grouped-card">
+            <h3 class="group-title">Where to Watch</h3>
+            {% if providers.stream %}
+                <div class="provider-group">
+                    <span class="provider-label">Stream</span>
+                    <div class="provider-logos">
+                        {% for p in providers.stream %}
+                            <div class="provider-chip" title="{{ p.provider_name }}">
+                                {% if p.provider_logo %}
+                                    <img src="{{ p.provider_logo }}" alt="{{ p.provider_name }}">
+                                {% endif %}
+                                <span>{{ p.provider_name }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+            {% if providers.rent %}
+                <div class="provider-group">
+                    <span class="provider-label">Rent</span>
+                    <div class="provider-logos">
+                        {% for p in providers.rent %}
+                            <div class="provider-chip" title="{{ p.provider_name }}">
+                                {% if p.provider_logo %}
+                                    <img src="{{ p.provider_logo }}" alt="{{ p.provider_name }}">
+                                {% endif %}
+                                <span>{{ p.provider_name }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+            {% if providers.buy %}
+                <div class="provider-group">
+                    <span class="provider-label">Buy</span>
+                    <div class="provider-logos">
+                        {% for p in providers.buy %}
+                            <div class="provider-chip" title="{{ p.provider_name }}">
+                                {% if p.provider_logo %}
+                                    <img src="{{ p.provider_logo }}" alt="{{ p.provider_name }}">
+                                {% endif %}
+                                <span>{{ p.provider_name }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="grouped-card">
+            <p class="no-providers">No UK streaming info available for this title.</p>
+        </div>
+    {% endif %}
+
+    <div class="grouped-card">
+        <h3 class="group-title">Change Status</h3>
+        <div class="status-buttons">
+            {% if item.status != 'want' %}
+                <form method="post" action="{{ url_for('update', item_id=item.id) }}" class="inline-form">
+                    <input type="hidden" name="status" value="want">
+                    <button type="submit" class="ios-btn btn-want">Want to Watch</button>
+                </form>
+            {% endif %}
+            {% if item.status != 'progress' %}
+                <form method="post" action="{{ url_for('update', item_id=item.id) }}" class="inline-form">
+                    <input type="hidden" name="status" value="progress">
+                    <button type="submit" class="ios-btn btn-progress">In Progress</button>
+                </form>
+            {% endif %}
+            {% if item.status != 'watched' %}
+                <form method="post" action="{{ url_for('update', item_id=item.id) }}" class="inline-form">
+                    <input type="hidden" name="status" value="watched">
+                    <button type="submit" class="ios-btn btn-watched">Watched</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grouped-card">
+        <h3 class="group-title">Your Rating & Notes</h3>
+        <form method="post" action="{{ url_for('update_details', item_id=item.id) }}" class="detail-form">
+            <label for="rating">Rating (1-10)</label>
+            <input type="number" id="rating" name="rating"
+                   min="1" max="10"
+                   value="{{ item.rating or '' }}"
+                   placeholder="Rate 1-10"
+                   class="ios-input">
+
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes"
+                      rows="3"
+                      placeholder="Your thoughts..."
+                      class="ios-input">{{ item.notes or '' }}</textarea>
+
+            <button type="submit" class="ios-btn btn-primary">Save Details</button>
+        </form>
+    </div>
+
+    <div class="grouped-card danger-zone">
+        <form method="post" action="{{ url_for('delete', item_id=item.id) }}"
+              onsubmit="return confirm('Remove {{ item.title }} from your watchlist?')">
+            <button type="submit" class="ios-btn btn-danger">Remove from List</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

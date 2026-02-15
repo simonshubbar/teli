@@ -1,0 +1,20 @@
+<article class="item-card" onclick="window.location='{{ url_for('detail', item_id=item.id) }}'">
+    <div class="card-poster">
+        {% if item.poster_path %}
+            <img src="{{ image_base }}{{ item.poster_path }}"
+                 alt="{{ item.title }} poster"
+                 loading="lazy">
+        {% else %}
+            <div class="no-poster">No Poster</div>
+        {% endif %}
+    </div>
+    <div class="card-info">
+        <h4 class="card-title">{{ item.title }}</h4>
+        <p class="card-meta">
+            <span class="media-badge {{ item.media_type }}">{{ 'Movie' if item.media_type == 'movie' else 'TV' }}</span>
+            {% if item.year %}
+                <span class="card-year">{{ item.year }}</span>
+            {% endif %}
+        </p>
+    </div>
+</article>

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Import — Teli{% endblock %}
+{% block page %}import{% endblock %}
+{% block nav_title %}Import{% endblock %}
+
+{% block content %}
+
+{% if not matches %}
+    <div class="grouped-card">
+        <h3 class="group-title">Batch Import</h3>
+        <p class="group-subtitle">Paste a list of titles (one per line) and we'll find them on TMDB.</p>
+        <form method="post" action="{{ url_for('import_search') }}">
+            <textarea name="titles" rows="8"
+                      placeholder="Inception
+Breaking Bad
+The Dark Knight
+Stranger Things"
+                      aria-label="Paste titles here"
+                      class="ios-input">{{ raw_text or '' }}</textarea>
+            <button type="submit" class="ios-btn btn-primary btn-full">Search All</button>
+        </form>
+    </div>
+{% else %}
+    <form method="post" action="{{ url_for('import_add') }}">
+        <p class="group-subtitle">Review the matches below. Uncheck any that are wrong.</p>
+
+        <div class="import-results">
+            {% for m in matches %}
+                <article class="import-item grouped-card">
+                    <div class="import-query">
+                        <strong>You typed:</strong> "{{ m.query }}"
+                    </div>
+
+                    {% if m.match %}
+                        <div class="import-match">
+                            <label class="import-checkbox">
+                                <input type="checkbox"
+                                       name="selected"
+                                       value="{{ loop.index0 }}"
+                                       {% if not m.match.on_list %}checked{% endif %}
+                                       {% if m.match.on_list %}disabled{% endif %}
+                                       onchange="toggleImportFields(this)">
+
+                                <div class="import-match-info">
+                                    {% if m.match.poster_url %}
+                                        <img src="{{ m.match.poster_url }}" alt="{{ m.match.title }}" class="import-poster">
+                                    {% else %}
+                                        <div class="no-poster small">No Poster</div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ m.match.title }}</strong>
+                                        {% if m.match.year %}({{ m.match.year }}){% endif %}
+                                        <br>
+                                        <span class="media-badge {{ m.match.media_type }}">
+                                            {{ 'Movie' if m.match.media_type == 'movie' else 'TV Show' }}
+                                        </span>
+                                        {% if m.match.on_list %}
+                                            <span class="already-added">Already on list</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </label>
+
+                            <div class="import-fields" id="import-fields-{{ loop.index0 }}">
+                                <input type="hidden" name="tmdb_id" value="{{ m.match.tmdb_id }}">
+                                <input type="hidden" name="media_type" value="{{ m.match.media_type }}">
+                                <input type="hidden" name="title" value="{{ m.match.title }}">
+                                <input type="hidden" name="year" value="{{ m.match.year }}">
+                                <input type="hidden" name="poster_path" value="{{ m.match.poster_path or '' }}">
+                                <input type="hidden" name="overview" value="{{ m.match.overview }}">
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="import-no-match">
+                            <span>No match found</span>
+                        </div>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+
+        <div class="import-actions">
+            <button type="submit" class="ios-btn btn-primary">Add Selected</button>
+            <a href="{{ url_for('import_page') }}" class="ios-btn btn-secondary">Start Over</a>
+        </div>
+    </form>
+{% endif %}
+{% endblock %}
