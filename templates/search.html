@@ -5,19 +5,6 @@
 
 {% block content %}
 
-<form method="get" action="{{ url_for('search') }}" role="search">
-    <div class="search-bar">
-        <input type="search"
-               name="q"
-               value="{{ query }}"
-               placeholder="Movies, TV shows..."
-               autofocus
-               aria-label="Search"
-               class="ios-search">
-        <button type="submit" class="ios-btn btn-primary">Search</button>
-    </div>
-</form>
-
 {% if query %}
     {% if results %}
         <p class="results-count">{{ results|length }} result{{ 's' if results|length != 1 }} for "{{ query }}"</p>

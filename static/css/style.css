@@ -102,7 +102,12 @@ body {
     color: var(--text-primary);
     margin: 0;
     padding: 0;
-    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    /*
+     * Space at the bottom so page content doesn't hide behind the
+     * fixed floating search bar. Matches the bar's total height:
+     * input (~40px) + top padding (10px) + bottom padding (12px) + safe area.
+     */
+    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     /* Override Pico */
@@ -143,6 +148,8 @@ a {
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 0.5px solid var(--bar-border);
+    /* Push content below the status bar / Dynamic Island on iOS */
+    padding-top: env(safe-area-inset-top, 0px);
 }
 
 .nav-bar-inner {
@@ -150,8 +157,11 @@ a {
     align-items: center;
     justify-content: center;
     position: relative;
-    height: 44px;
+    height: 44px;                /* Standard iOS nav bar height */
     padding: 0 16px;
+    /* Respect left/right safe areas (landscape iPhones with notch) */
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
     max-width: 700px;
     margin: 0 auto;
 }
@@ -166,11 +176,18 @@ a {
 
 .nav-back {
     position: absolute;
-    left: 16px;
+    left: 8px;
     font-size: 17px;
     font-weight: 400;
     color: var(--tint);
     text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* iOS HIG: minimum 44×44pt tap target */
+    min-width: 44px;
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
 }
 
 /* ===== iOS Segmented Control ===== */
@@ -208,51 +225,301 @@ a {
     }
 }
 
-/* ===== iOS Tab Bar ===== */
+/* ===== Floating Search Bar (Safari-style) ===== */
 
-.tab-bar {
+.floating-search-bar {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     z-index: 100;
-    display: flex;
-    justify-content: space-around;
-    align-items: flex-start;
-    height: 49px;
-    padding-top: 5px;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* Translucent background with blur — like Safari's address bar */
     background: var(--bar-bg);
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     border-top: 0.5px solid var(--bar-border);
+    padding: 10px 16px;
+    /*
+     * Bottom padding clears the iOS home indicator (swipe-up gesture zone).
+     * env(safe-area-inset-bottom) is ~34px on Face ID iPhones, 0 on others.
+     * We add extra spacing so the search bar sits comfortably above it.
+     */
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    /* Respect left/right safe areas in landscape */
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 
-.tab-item {
+.floating-search-form {
+    position: relative;
+    max-width: 700px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+}
+
+/* The search icon sits inside the input */
+.floating-search-icon {
+    position: absolute;
+    left: 12px;
+    color: var(--text-tertiary);
+    pointer-events: none;
+}
+
+.floating-search-input {
+    width: 100%;
+    padding: 11px 14px 11px 38px; /* extra left padding for the icon */
+    font-size: 16px;              /* 16px prevents iOS auto-zoom on focus */
+    font-family: inherit;
+    background: var(--bg-tertiary);
+    border: none;
+    border-radius: 12px;
+    color: var(--text-primary);
+    outline: none;
+    margin: 0;
+    /* iOS HIG: minimum 44pt tap height */
+    min-height: 44px;
+    /* Prevent iOS from adding inner shadow on inputs */
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.floating-search-input:focus {
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
+}
+
+/* Placeholder styling */
+.floating-search-input::placeholder {
+    color: var(--text-tertiary);
+}
+
+/* ===== Search Overlay (full-screen, slides up) ===== */
+
+.search-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 500;                   /* Above everything else */
+    background: var(--bg-grouped);
+    /* Start off-screen (below the viewport) */
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     display: flex;
     flex-direction: column;
+}
+
+/* When the "open" class is added, slide the overlay up into view */
+.search-overlay.open {
+    transform: translateY(0);
+}
+
+/* Top bar: search input + Cancel button */
+.overlay-top-bar {
+    display: flex;
     align-items: center;
-    gap: 2px;
-    text-decoration: none;
-    color: var(--text-secondary);
-    -webkit-tap-highlight-color: transparent;
-    padding: 2px 20px;
-    transition: color 0.15s ease;
+    gap: 10px;
+    padding: 10px 16px;
+    /* Push below the status bar / Dynamic Island on iOS */
+    padding-top: calc(10px + env(safe-area-inset-top, 0px));
+    background: var(--bar-bg);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 0.5px solid var(--bar-border);
+    /* Respect left/right safe areas in landscape */
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    flex-shrink: 0;
 }
 
-.tab-item svg {
-    width: 25px;
-    height: 25px;
+/* Search input wrapper (holds the icon + input) */
+.overlay-search-wrapper {
+    position: relative;
+    flex: 1;
 }
 
-.tab-item span {
-    font-size: 10px;
-    font-weight: 500;
-    color: inherit;
+/* The actual search input inside the overlay */
+.overlay-search-input {
+    width: 100%;
+    padding: 11px 14px 11px 38px;   /* Left padding for the search icon */
+    font-size: 16px;
+    font-family: inherit;
+    background: var(--bg-tertiary);
+    border: none;
+    border-radius: 12px;
+    color: var(--text-primary);
+    outline: none;
+    min-height: 44px;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
-.tab-item.active {
+.overlay-search-input:focus {
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
+}
+
+.overlay-search-input::placeholder {
+    color: var(--text-tertiary);
+}
+
+/* Cancel button */
+.overlay-cancel-btn {
+    background: none;
+    border: none;
     color: var(--tint);
+    font-size: 17px;
+    font-weight: 400;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 8px 4px;
+    white-space: nowrap;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Scrollable results area */
+.overlay-results {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 12px 16px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    max-width: 700px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* Hint text (shown before searching or when no results) */
+.overlay-hint {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 40px 0;
+    font-size: 15px;
+}
+
+/* ===== Import Icon (top-left nav) ===== */
+
+.nav-import {
+    position: absolute;
+    left: 8px;
+    color: var(--tint);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.15s ease;
+    /* iOS HIG: minimum 44×44pt tap target */
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.nav-import:active {
+    opacity: 0.6;
+}
+
+/* ===== Profile Dropdown Menu ===== */
+
+/* The toggle button wrapping the avatar */
+.profile-toggle {
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    /* iOS HIG: minimum 44×44pt tap target */
+    min-width: 44px;
+    min-height: 44px;
+}
+
+/* Fallback avatar (letter) when no picture */
+.nav-avatar-fallback {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--tint);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* The dropdown card */
+.profile-dropdown {
+    display: none;                /* hidden by default */
+    position: absolute;
+    top: calc(100% + 8px);       /* sits just below the avatar */
+    right: 0;
+    min-width: 220px;
+    background: var(--surface);
+    border-radius: var(--card-radius);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    z-index: 200;
+    animation: dropdownFadeIn 0.15s ease;
+}
+
+/* When the "open" class is added via JS */
+.profile-dropdown.open {
+    display: block;
+}
+
+@keyframes dropdownFadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.profile-dropdown-header {
+    padding: 14px 16px 10px;
+}
+
+.profile-name {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.profile-email {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 2px 0 0;
+    word-break: break-all;
+}
+
+.profile-dropdown-divider {
+    height: 0.5px;
+    background: var(--separator);
+}
+
+.profile-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: background 0.15s ease;
+}
+
+.profile-dropdown-item:hover {
+    background: var(--surface-secondary);
+}
+
+/* Sign-out link gets a red tint */
+.profile-dropdown-item.sign-out {
+    color: var(--color-delete);
 }
 
 /* ===== Container ===== */
@@ -1023,14 +1290,13 @@ label {
     background: var(--separator);
 }
 
-/* ===== Nav Bar Profile / Logout ===== */
+/* ===== Nav Bar Profile ===== */
 
 .nav-profile {
     position: absolute;
     right: 16px;
     display: flex;
     align-items: center;
-    gap: 10px;
 }
 
 .nav-avatar {
@@ -1040,46 +1306,12 @@ label {
     object-fit: cover;
 }
 
-.nav-logout {
-    color: var(--text-secondary);
-    display: flex;
-    align-items: center;
-    transition: color 0.15s ease;
-}
-
-.nav-logout:hover {
-    color: var(--color-delete);
-}
-
 /* ===== Desktop / Tablet ===== */
 
 @media (min-width: 769px) {
     body {
-        padding-bottom: 0;
-    }
-
-    .tab-bar {
-        position: sticky;
-        top: 44px;
-        bottom: auto;
-        height: auto;
-        padding: 6px 16px;
-        justify-content: center;
-        gap: 32px;
-    }
-
-    .tab-item {
-        flex-direction: row;
-        gap: 6px;
-    }
-
-    .tab-item svg {
-        width: 20px;
-        height: 20px;
-    }
-
-    .tab-item span {
-        font-size: 14px;
+        /* Floating search bar is still visible on desktop */
+        padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
     }
 
     .container {

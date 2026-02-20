@@ -114,6 +114,30 @@ def search():
     return render_template("search.html", query=query, results=results)
 
 
+@app.route("/api/search")
+@login_required
+def api_search():
+    """
+    JSON search endpoint — called by the live search overlay.
+
+    Returns results as JSON so JavaScript can render them
+    without reloading the page.
+    """
+    query = request.args.get("q", "").strip()
+    results = []
+
+    if query:
+        results = search_multi(query)
+
+        # Mark results that are already on THIS user's watchlist
+        for r in results:
+            existing = get_item_by_tmdb(current_user.id, r["tmdb_id"], r["media_type"])
+            r["on_list"] = existing is not None
+            r["list_id"] = existing["id"] if existing else None
+
+    return jsonify({"results": results})
+
+
 @app.route("/add", methods=["POST"])
 @login_required
 def add():
@@ -139,6 +163,11 @@ def add():
             flash(f"Added '{title}' to your list!", "success")
         else:
             flash(f"'{title}' is already on your list.", "info")
+
+    # If the request came from JavaScript (fetch), return JSON
+    # so the overlay can update the button without reloading
+    if request.headers.get("X-Requested-With") == "fetch":
+        return jsonify({"success": success})
 
     return redirect(url_for("index"))
 
