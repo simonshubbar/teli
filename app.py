@@ -27,6 +27,13 @@ app = Flask(__name__)
 import os
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
+# Tell Flask it's behind a reverse proxy (PythonAnywhere uses HTTPS,
+# but Flask only sees HTTP internally). This makes url_for() generate
+# https:// URLs so Google OAuth callbacks match correctly.
+app.config["PREFERRED_URL_SCHEME"] = os.environ.get("PREFERRED_URL_SCHEME", "http")
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
 # Set up Google Sign-In and Flask-Login
 # This registers the /login, /login/google, /auth/callback, and /logout routes
 init_auth(app)
