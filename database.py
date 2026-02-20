@@ -36,34 +36,50 @@ def init_db():
     """
     conn = get_db()
 
-    # --- items table: each movie/show on your watchlist ---
+    # --- users table: each person who signs in with Google ---
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            google_id     TEXT NOT NULL UNIQUE,    -- Google's unique user ID
+            email         TEXT NOT NULL,
+            name          TEXT,                    -- Display name from Google
+            picture       TEXT,                    -- Profile picture URL from Google
+            created_date  TEXT NOT NULL
+        )
+    """)
+
+    # --- items table: each movie/show on a user's watchlist ---
+    # The user_id column links each item to the user who added it.
     conn.execute("""
         CREATE TABLE IF NOT EXISTS items (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id       INTEGER NOT NULL,        -- Which user owns this item
             tmdb_id       INTEGER NOT NULL,
-            media_type    TEXT NOT NULL,          -- 'movie' or 'tv'
+            media_type    TEXT NOT NULL,            -- 'movie' or 'tv'
             title         TEXT NOT NULL,
-            year          TEXT,                   -- Release year (text because some are ranges like "2020-2024")
-            poster_path   TEXT,                   -- Path to poster image on TMDB
-            overview      TEXT,                   -- Plot summary
+            year          TEXT,                     -- Release year
+            poster_path   TEXT,                     -- Path to poster image on TMDB
+            overview      TEXT,                     -- Plot summary
             status        TEXT NOT NULL DEFAULT 'want',  -- 'want', 'progress', or 'watched'
-            rating        INTEGER,                -- Your rating 1-10 (optional)
-            notes         TEXT,                   -- Your personal notes (optional)
+            rating        INTEGER,                  -- Your rating 1-10 (optional)
+            notes         TEXT,                     -- Your personal notes (optional)
             added_date    TEXT NOT NULL,
             updated_date  TEXT NOT NULL,
-            UNIQUE(tmdb_id, media_type)           -- Prevent adding the same title twice
+            UNIQUE(user_id, tmdb_id, media_type),  -- Same user can't add the same title twice
+            FOREIGN KEY (user_id) REFERENCES users(id)
         )
     """)
 
     # --- providers table: cached streaming availability ---
+    # This data is shared (not per-user) since streaming info is the same for everyone.
     conn.execute("""
         CREATE TABLE IF NOT EXISTS providers (
             id             INTEGER PRIMARY KEY AUTOINCREMENT,
             tmdb_id        INTEGER NOT NULL,
             media_type     TEXT NOT NULL,
             provider_name  TEXT NOT NULL,
-            provider_logo  TEXT,                  -- Path to logo image on TMDB
-            provider_type  TEXT NOT NULL,          -- 'flatrate' (stream), 'rent', or 'buy'
+            provider_logo  TEXT,                    -- Path to logo image on TMDB
+            provider_type  TEXT NOT NULL,            -- 'flatrate' (stream), 'rent', or 'buy'
             country        TEXT NOT NULL DEFAULT 'GB',
             fetched_date   TEXT NOT NULL
         )
@@ -74,33 +90,89 @@ def init_db():
 
 
 # -----------------------------------------------------------------------
+# User operations
+# -----------------------------------------------------------------------
+
+def get_or_create_user(google_id, email, name, picture):
+    """
+    Find a user by their Google ID, or create a new one if they're signing
+    in for the first time.
+
+    Returns a dict with the user's database row.
+    """
+    conn = get_db()
+
+    # Check if this Google account already has a user record
+    row = conn.execute(
+        "SELECT * FROM users WHERE google_id = ?", (google_id,)
+    ).fetchone()
+
+    if row:
+        # User exists — update their name/picture in case they changed it on Google
+        conn.execute(
+            "UPDATE users SET name = ?, picture = ?, email = ? WHERE google_id = ?",
+            (name, picture, email, google_id)
+        )
+        conn.commit()
+        # Re-fetch to get updated data
+        row = conn.execute(
+            "SELECT * FROM users WHERE google_id = ?", (google_id,)
+        ).fetchone()
+    else:
+        # First time signing in — create a new user
+        now = datetime.now().isoformat()
+        conn.execute(
+            """INSERT INTO users (google_id, email, name, picture, created_date)
+               VALUES (?, ?, ?, ?, ?)""",
+            (google_id, email, name, picture, now)
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT * FROM users WHERE google_id = ?", (google_id,)
+        ).fetchone()
+
+    user = dict(row)
+    conn.close()
+    return user
+
+
+def get_user(user_id):
+    """Get a user by their database ID."""
+    conn = get_db()
+    row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+# -----------------------------------------------------------------------
 # CRUD operations (Create, Read, Update, Delete)
 # -----------------------------------------------------------------------
 
-def add_item(tmdb_id, media_type, title, year, poster_path, overview):
-    """Add a movie/show to the watchlist with status 'want'."""
+def add_item(user_id, tmdb_id, media_type, title, year, poster_path, overview):
+    """Add a movie/show to a user's watchlist with status 'want'."""
     now = datetime.now().isoformat()
     conn = get_db()
     try:
         conn.execute(
-            """INSERT INTO items (tmdb_id, media_type, title, year, poster_path, overview, status, added_date, updated_date)
-               VALUES (?, ?, ?, ?, ?, ?, 'want', ?, ?)""",
-            (tmdb_id, media_type, title, year, poster_path, overview, now, now)
+            """INSERT INTO items (user_id, tmdb_id, media_type, title, year, poster_path, overview, status, added_date, updated_date)
+               VALUES (?, ?, ?, ?, ?, ?, ?, 'want', ?, ?)""",
+            (user_id, tmdb_id, media_type, title, year, poster_path, overview, now, now)
         )
         conn.commit()
         return True
     except sqlite3.IntegrityError:
-        # UNIQUE constraint failed — this title is already on the list
+        # UNIQUE constraint failed — this title is already on the user's list
         return False
     finally:
         conn.close()
 
 
-def get_all_items():
-    """Get all watchlist items, grouped by status."""
+def get_all_items(user_id):
+    """Get all watchlist items for a specific user, grouped by status."""
     conn = get_db()
     rows = conn.execute(
-        "SELECT * FROM items ORDER BY updated_date DESC"
+        "SELECT * FROM items WHERE user_id = ? ORDER BY updated_date DESC",
+        (user_id,)
     ).fetchall()
     conn.close()
 
@@ -120,12 +192,12 @@ def get_item(item_id):
     return dict(row) if row else None
 
 
-def get_item_by_tmdb(tmdb_id, media_type):
-    """Check if a title is already on the watchlist."""
+def get_item_by_tmdb(user_id, tmdb_id, media_type):
+    """Check if a title is already on a specific user's watchlist."""
     conn = get_db()
     row = conn.execute(
-        "SELECT * FROM items WHERE tmdb_id = ? AND media_type = ?",
-        (tmdb_id, media_type)
+        "SELECT * FROM items WHERE user_id = ? AND tmdb_id = ? AND media_type = ?",
+        (user_id, tmdb_id, media_type)
     ).fetchone()
     conn.close()
     return dict(row) if row else None

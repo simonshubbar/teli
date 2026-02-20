@@ -23,7 +23,24 @@
         <div class="nav-bar-inner">
             {% block nav_left %}{% endblock %}
             <h1 class="nav-title">{% block nav_title %}Teli{% endblock %}</h1>
-            {% block nav_right %}{% endblock %}
+
+            <!-- Show profile picture + logout when logged in -->
+            {% block nav_right %}
+                {% if current_user.is_authenticated %}
+                <div class="nav-profile">
+                    {% if current_user.picture %}
+                        <img src="{{ current_user.picture }}" alt="{{ current_user.name }}" class="nav-avatar" referrerpolicy="no-referrer">
+                    {% endif %}
+                    <a href="{{ url_for('auth.logout') }}" class="nav-logout" title="Sign out">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                    </a>
+                </div>
+                {% endif %}
+            {% endblock %}
         </div>
     </header>
 
@@ -43,7 +60,8 @@
         {% block content %}{% endblock %}
     </main>
 
-    <!-- iOS-style bottom tab bar -->
+    <!-- iOS-style bottom tab bar — only show when logged in -->
+    {% if current_user.is_authenticated %}
     <nav class="tab-bar">
         <a href="{{ url_for('index') }}" class="tab-item" data-tab="home">
             <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -68,6 +86,7 @@
             <span>Import</span>
         </a>
     </nav>
+    {% endif %}
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>

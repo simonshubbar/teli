@@ -10,35 +10,43 @@ The @app.route decorator tells Flask which URL triggers which function.
 """
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask_login import login_required, current_user
 from database import init_db, add_item, get_all_items, get_item, get_item_by_tmdb, \
     update_item_status, update_item_details, delete_item, \
     get_cached_providers, save_providers, is_provider_cache_fresh
 from tmdb import search_multi, get_providers, search_single
 from config import TMDB_IMAGE_BASE
+from auth import init_auth
 
 # Create the Flask app
 app = Flask(__name__)
 
-# Secret key for flash messages (temporary notifications like "Item added!")
-# In production (PythonAnywhere), this reads from an environment variable.
+# Secret key for sessions and flash messages.
+# In production (PythonAnywhere), set this as an environment variable.
 # Locally, the fallback "dev-secret-key" is fine for development.
 import os
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
+# Set up Google Sign-In and Flask-Login
+# This registers the /login, /login/google, /auth/callback, and /logout routes
+init_auth(app)
+
 
 # -----------------------------------------------------------------------
-# Routes
+# Routes — all require login (except auth routes handled by auth.py)
 # -----------------------------------------------------------------------
 
 @app.route("/")
+@login_required  # Redirects to login page if not signed in
 def index():
     """
-    Main page — shows your watchlist in three sections:
+    Main page — shows your personal watchlist in three sections:
     Want to Watch / In Progress / Watched
 
-    Also supports filtering by streaming provider (Phase 2).
+    Also supports filtering by streaming provider and media type.
     """
-    items = get_all_items()
+    # Pass current_user.id so we only get THIS user's items
+    items = get_all_items(current_user.id)
     provider_filter = request.args.get("provider", "")
     media_filter = request.args.get("media", "")  # "movie", "tv", or "" (all)
 
@@ -78,6 +86,7 @@ def index():
 
 
 @app.route("/search")
+@login_required
 def search():
     """
     Search page — user types a title, we call TMDB API,
@@ -89,9 +98,9 @@ def search():
     if query:
         results = search_multi(query)
 
-        # Mark results that are already on the watchlist
+        # Mark results that are already on THIS user's watchlist
         for r in results:
-            existing = get_item_by_tmdb(r["tmdb_id"], r["media_type"])
+            existing = get_item_by_tmdb(current_user.id, r["tmdb_id"], r["media_type"])
             r["on_list"] = existing is not None
             r["list_id"] = existing["id"] if existing else None
 
@@ -99,9 +108,10 @@ def search():
 
 
 @app.route("/add", methods=["POST"])
+@login_required
 def add():
     """
-    Add a movie/show to the watchlist.
+    Add a movie/show to the current user's watchlist.
 
     This is a POST route — it receives data from a form submission.
     After adding, it redirects back to the main page.
@@ -114,7 +124,8 @@ def add():
     overview = request.form.get("overview")
 
     if tmdb_id and media_type and title:
-        success = add_item(tmdb_id, media_type, title, year, poster_path, overview)
+        # Pass current_user.id so the item is linked to this user
+        success = add_item(current_user.id, tmdb_id, media_type, title, year, poster_path, overview)
         if success:
             # Fetch and cache streaming providers right away
             _refresh_providers(tmdb_id, media_type)
@@ -126,6 +137,7 @@ def add():
 
 
 @app.route("/detail/<int:item_id>")
+@login_required
 def detail(item_id):
     """
     Detail page for a single movie/show.
@@ -135,6 +147,11 @@ def detail(item_id):
     """
     item = get_item(item_id)
     if not item:
+        flash("Item not found.", "error")
+        return redirect(url_for("index"))
+
+    # Ownership check — make sure this item belongs to the current user
+    if item["user_id"] != current_user.id:
         flash("Item not found.", "error")
         return redirect(url_for("index"))
 
@@ -157,8 +174,14 @@ def detail(item_id):
 
 
 @app.route("/update/<int:item_id>", methods=["POST"])
+@login_required
 def update(item_id):
     """Update an item's status (want / progress / watched)."""
+    item = get_item(item_id)
+    if not item or item["user_id"] != current_user.id:
+        flash("Item not found.", "error")
+        return redirect(url_for("index"))
+
     new_status = request.form.get("status")
 
     if new_status in ("want", "progress", "watched"):
@@ -172,8 +195,14 @@ def update(item_id):
 
 
 @app.route("/update_details/<int:item_id>", methods=["POST"])
+@login_required
 def update_details(item_id):
     """Update an item's rating and notes."""
+    item = get_item(item_id)
+    if not item or item["user_id"] != current_user.id:
+        flash("Item not found.", "error")
+        return redirect(url_for("index"))
+
     rating = request.form.get("rating", type=int)
     notes = request.form.get("notes", "").strip()
 
@@ -187,26 +216,32 @@ def update_details(item_id):
 
 
 @app.route("/delete/<int:item_id>", methods=["POST"])
+@login_required
 def delete(item_id):
-    """Remove an item from the watchlist."""
+    """Remove an item from the current user's watchlist."""
     item = get_item(item_id)
-    if item:
-        delete_item(item_id)
-        flash(f"Removed '{item['title']}' from your list.", "success")
+    if not item or item["user_id"] != current_user.id:
+        flash("Item not found.", "error")
+        return redirect(url_for("index"))
+
+    delete_item(item_id)
+    flash(f"Removed '{item['title']}' from your list.", "success")
     return redirect(url_for("index"))
 
 
 # -----------------------------------------------------------------------
-# Batch Import (Phase 3)
+# Batch Import
 # -----------------------------------------------------------------------
 
 @app.route("/import", methods=["GET"])
+@login_required
 def import_page():
     """Show the import page with a text box for pasting titles."""
     return render_template("import.html")
 
 
 @app.route("/import/search", methods=["POST"])
+@login_required
 def import_search():
     """
     Take a list of titles (one per line), search TMDB for each,
@@ -219,7 +254,7 @@ def import_search():
     for title in titles:
         result = search_single(title)
         if result:
-            existing = get_item_by_tmdb(result["tmdb_id"], result["media_type"])
+            existing = get_item_by_tmdb(current_user.id, result["tmdb_id"], result["media_type"])
             result["on_list"] = existing is not None
             matches.append({"query": title, "match": result})
         else:
@@ -229,6 +264,7 @@ def import_search():
 
 
 @app.route("/import/add", methods=["POST"])
+@login_required
 def import_add():
     """Add all selected items from the import confirmation list."""
     # The form sends arrays of values for each checked item
@@ -242,7 +278,7 @@ def import_add():
     added_count = 0
     for i in range(len(tmdb_ids)):
         success = add_item(
-            int(tmdb_ids[i]), media_types[i], titles[i],
+            current_user.id, int(tmdb_ids[i]), media_types[i], titles[i],
             years[i], poster_paths[i], overviews[i]
         )
         if success:

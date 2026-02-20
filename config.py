@@ -22,6 +22,12 @@ TMDB_BASE_URL = "https://api.themoviedb.org/3"
 # Base URL for poster images (w500 = 500px wide — good balance of quality/speed)
 TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 
+# --- Google OAuth -------------------------------------------------------
+# These come from the Google Cloud Console (APIs & Services → Credentials).
+# Set them as environment variables so they never appear in source code.
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+
 # --- Database -----------------------------------------------------------
 # Path to the SQLite database file (sits next to app.py)
 DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "watchlist.db")
