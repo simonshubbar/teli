@@ -258,10 +258,12 @@ a {
     align-items: center;
 }
 
-/* The search icon sits inside the input */
+/* The search icon sits inside the input, vertically centred */
 .floating-search-icon {
     position: absolute;
     left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
     color: var(--text-tertiary);
     pointer-events: none;
 }
@@ -315,18 +317,18 @@ a {
     transform: translateY(0);
 }
 
-/* Top bar: search input + Cancel button */
-.overlay-top-bar {
+/* Bottom bar: search input + Cancel button (mirrors the floating search bar) */
+.overlay-bottom-bar {
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 10px 16px;
-    /* Push below the status bar / Dynamic Island on iOS */
-    padding-top: calc(10px + env(safe-area-inset-top, 0px));
+    /* Clear the iOS home indicator */
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     background: var(--bar-bg);
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
-    border-bottom: 0.5px solid var(--bar-border);
+    border-top: 0.5px solid var(--bar-border);
     /* Respect left/right safe areas in landscape */
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
@@ -774,30 +776,52 @@ a {
     border-radius: 6px;
 }
 
-/* ===== Filter Bar ===== */
+/* ===== Streaming Service Filter Chips ===== */
 
-.filter-bar {
-    margin-bottom: 16px;
+.provider-chips-row {
     display: flex;
-    justify-content: flex-end;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 12px;
+    margin-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+    /* Hide scrollbar — swipe to scroll */
+    scrollbar-width: none;
 }
 
-.ios-select {
-    appearance: none;
-    -webkit-appearance: none;
-    background: var(--surface);
-    border: none;
-    border-radius: 8px;
-    padding: 8px 28px 8px 12px;
-    font-size: 15px;
-    font-family: inherit;
-    color: var(--tint);
+.provider-chips-row::-webkit-scrollbar {
+    display: none;
+}
+
+.provider-chip {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px 5px 5px;
+    border-radius: 20px;
+    font-size: 14px;
     font-weight: 500;
-    cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23007AFF'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    margin-bottom: 0;
+    text-decoration: none;
+    color: var(--text-secondary);
+    background: var(--surface);
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.provider-chip.active {
+    background: var(--tint);
+    color: #ffffff;
+}
+
+/* Service logo inside filter chip */
+.chip-logo {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    object-fit: cover;
+    flex-shrink: 0;
 }
 
 /* ===== iOS Buttons ===== */
@@ -1186,6 +1210,96 @@ label {
 
 .import-actions .ios-btn {
     flex: 1;
+}
+
+/* Match display row: match info on left, Change/Search button on right */
+.import-match-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.import-match-display .import-checkbox {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Change / Search / Cancel button */
+.import-change-btn {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid var(--separator);
+    color: var(--tint);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.import-change-btn:active {
+    opacity: 0.7;
+}
+
+/* Inline search panel — hidden by default, shown with .open */
+.import-inline-search {
+    display: none;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--separator);
+}
+
+.import-inline-search.open {
+    display: block;
+}
+
+/* Search bar: text input + ✕ close button side by side */
+.import-search-bar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.import-search-bar .ios-input {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.import-search-close {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 6px;
+}
+
+/* Individual result rows inside the inline search panel */
+.import-search-result {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--separator);
+}
+
+.import-search-result:last-child {
+    border-bottom: none;
+}
+
+/* Small hint / status text inside the inline search panel */
+.import-search-hint {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 8px 0;
+    margin: 0;
 }
 
 /* ===== App Footer ===== */

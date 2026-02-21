@@ -16,16 +16,18 @@
 </div>
 
 {% if all_providers %}
-<div class="filter-bar">
-    <form method="get" action="{{ url_for('index') }}">
-        <input type="hidden" name="media" value="{{ media_filter }}">
-        <select name="provider" onchange="this.form.submit()" aria-label="Filter by streaming service" class="ios-select">
-            <option value="">All Services</option>
-            {% for p in all_providers %}
-                <option value="{{ p }}" {% if provider_filter == p %}selected{% endif %}>{{ p }}</option>
-            {% endfor %}
-        </select>
-    </form>
+<div class="provider-chips-row">
+    <a href="{{ url_for('index', media=media_filter) }}"
+       class="provider-chip {{ 'active' if not provider_filter }}">All</a>
+    {% for name, logo in all_providers %}
+    <a href="{{ url_for('index', media=media_filter, provider=name) }}"
+       class="provider-chip {{ 'active' if provider_filter == name }}">
+        {% if logo %}
+        <img src="{{ logo | replace('/w500/', '/w45/') }}" alt="" class="chip-logo">
+        {% endif %}
+        {{ name }}
+    </a>
+    {% endfor %}
 </div>
 {% endif %}
 

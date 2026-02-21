@@ -17,6 +17,66 @@ from database import init_db, add_item, get_all_items, get_item, get_item_by_tmd
 from tmdb import search_multi, get_providers, search_single
 from config import TMDB_IMAGE_BASE
 from auth import init_auth
+import re
+
+
+# Tier/plan suffixes that TMDB appends to provider names.
+# We strip these so "Netflix Standard with Ads" and "Netflix Basic"
+# both appear as just "Netflix" in the filter chips.
+_PROVIDER_SUFFIXES = re.compile(
+    r"\s+(standard with ads|basic with ads|with ads|standard|basic|premium|"
+    r"select|essentials|kids)\s*$",
+    re.IGNORECASE,
+)
+
+def normalize_provider_name(name):
+    """
+    Strip plan/tier suffixes from a TMDB provider name.
+
+    Examples:
+        "Netflix Standard with Ads" -> "Netflix"
+        "Amazon Prime Video with Ads" -> "Amazon Prime Video"
+
+    Note: "plus" is intentionally NOT stripped because it appears in
+    real brand names like "Disney Plus".
+    """
+    return _PROVIDER_SUFFIXES.sub("", name).strip()
+
+
+# TMDB uses different names in different regions.
+# Map raw (normalized) TMDB names to the display name we want in the chips.
+_PROVIDER_DISPLAY_NAMES = {
+    "Apple TV":    "Apple TV+",   # UK TMDB name for the Apple subscription service
+    "Disney Plus": "Disney+",     # UK TMDB name for Disney+
+}
+
+def canonical_provider_name(raw_name):
+    """Normalize a raw TMDB provider name, then apply display-name overrides."""
+    normalized = normalize_provider_name(raw_name)
+    return _PROVIDER_DISPLAY_NAMES.get(normalized, normalized)
+
+
+# Only show filter chips for these mainstream subscription services.
+# Names here should match what canonical_provider_name() produces.
+STREAMING_WHITELIST = {
+    "Netflix",
+    "Amazon Prime Video",
+    "Disney+",
+    "Apple TV+",
+    "Paramount+",
+    "Now",
+    "BBC iPlayer",
+    "ITVX",
+    "All 4",
+    "BritBox",
+    "Discovery+",
+    "MUBI",
+    "Crunchyroll",
+    "Max",
+    "Hulu",
+    "Peacock",
+}
+
 
 # Create the Flask app
 app = Flask(__name__)
@@ -62,32 +122,53 @@ def index():
         for status in items:
             items[status] = [i for i in items[status] if i["media_type"] == media_filter]
 
+    # Collect all unique streaming providers BEFORE applying the provider filter,
+    # so the chips don't disappear when one is selected.
+    # We normalize names (strip tier suffixes) so "Netflix Standard with Ads"
+    # and "Netflix Basic" both collapse to "Netflix".
+    # provider_logos: {canonical_name: logo_url}
+    # Build a provider map for every item, fetching from TMDB if not yet cached.
+    # We store the result so we don't call get_cached_providers twice per item.
+    item_providers = {}  # (tmdb_id, media_type) -> [provider rows]
+    all_items_flat = [item for status in items for item in items[status]]
+    for item in all_items_flat:
+        key = (item["tmdb_id"], item["media_type"])
+        if key not in item_providers:
+            item_providers[key] = _get_or_fetch_providers(item["tmdb_id"], item["media_type"])
+
+    # Collect unique streaming chips from every item's providers.
+    provider_logos = {}
+    for providers in item_providers.values():
+        for p in providers:
+            if p["provider_type"] == "stream":
+                canonical = canonical_provider_name(p["provider_name"])
+                if canonical in STREAMING_WHITELIST and canonical not in provider_logos:
+                    provider_logos[canonical] = p["provider_logo"]
+
+    # Apply the provider filter for the displayed items.
     if provider_filter:
-        # Filter items to only show those available on a specific service
         for status in items:
             filtered = []
             for item in items[status]:
-                providers = get_cached_providers(item["tmdb_id"], item["media_type"])
-                provider_names = [p["provider_name"] for p in providers]
-                if provider_filter in provider_names:
+                key = (item["tmdb_id"], item["media_type"])
+                canonical_names = [
+                    canonical_provider_name(p["provider_name"])
+                    for p in item_providers.get(key, [])
+                    if p["provider_type"] == "stream"
+                ]
+                if provider_filter in canonical_names:
                     filtered.append(item)
             items[status] = filtered
 
-    # Collect all unique streaming provider names for the filter dropdown
-    all_providers = set()
-    for status in items:
-        for item in items[status]:
-            providers = get_cached_providers(item["tmdb_id"], item["media_type"])
-            for p in providers:
-                if p["provider_type"] == "stream":
-                    all_providers.add(p["provider_name"])
+    # Sorted list of (name, logo_url) tuples for the template
+    all_providers = sorted(provider_logos.items())
 
     return render_template(
         "index.html",
         items=items,
         provider_filter=provider_filter,
         media_filter=media_filter,
-        all_providers=sorted(all_providers),
+        all_providers=all_providers,
         image_base=TMDB_IMAGE_BASE
     )
 

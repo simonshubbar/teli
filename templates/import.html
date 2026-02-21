@@ -30,7 +30,7 @@ Stranger Things"
     </div>
 {% else %}
     <form method="post" action="{{ url_for('import_add') }}">
-        <p class="group-subtitle">Review the matches below. Uncheck any that are wrong.</p>
+        <p class="group-subtitle">Review matches below. Hit <strong>Change</strong> or <strong>Search</strong> to fix any that are wrong or missing.</p>
 
         <div class="import-results">
             {% for m in matches %}
@@ -39,16 +39,16 @@ Stranger Things"
                         <strong>You typed:</strong> "{{ m.query }}"
                     </div>
 
-                    {% if m.match %}
-                        <div class="import-match">
+                    <!-- Current match display + Change/Search button -->
+                    <div class="import-match-display" id="import-display-{{ loop.index0 }}">
+                        {% if m.match %}
                             <label class="import-checkbox">
                                 <input type="checkbox"
-                                       name="selected"
                                        value="{{ loop.index0 }}"
+                                       id="import-cb-{{ loop.index0 }}"
                                        {% if not m.match.on_list %}checked{% endif %}
                                        {% if m.match.on_list %}disabled{% endif %}
                                        onchange="toggleImportFields(this)">
-
                                 <div class="import-match-info">
                                     {% if m.match.poster_url %}
                                         <img src="{{ m.match.poster_url }}" alt="{{ m.match.title }}" class="import-poster">
@@ -68,21 +68,57 @@ Stranger Things"
                                     </div>
                                 </div>
                             </label>
+                            {% if not m.match.on_list %}
+                            <button type="button" class="import-change-btn"
+                                    onclick="toggleImportSearch({{ loop.index0 }}, this)"
+                                    data-query="{{ m.query | e }}">Change</button>
+                            {% endif %}
+                        {% else %}
+                            <label class="import-checkbox">
+                                <input type="checkbox"
+                                       value="{{ loop.index0 }}"
+                                       id="import-cb-{{ loop.index0 }}"
+                                       disabled>
+                                <div class="import-no-match">No match found</div>
+                            </label>
+                            <button type="button" class="import-change-btn"
+                                    onclick="toggleImportSearch({{ loop.index0 }}, this)"
+                                    data-query="{{ m.query | e }}">Search</button>
+                        {% endif %}
+                    </div>
 
-                            <div class="import-fields" id="import-fields-{{ loop.index0 }}">
-                                <input type="hidden" name="tmdb_id" value="{{ m.match.tmdb_id }}">
-                                <input type="hidden" name="media_type" value="{{ m.match.media_type }}">
-                                <input type="hidden" name="title" value="{{ m.match.title }}">
-                                <input type="hidden" name="year" value="{{ m.match.year }}">
-                                <input type="hidden" name="poster_path" value="{{ m.match.poster_path or '' }}">
-                                <input type="hidden" name="overview" value="{{ m.match.overview }}">
-                            </div>
+                    <!-- Inline search panel (hidden until Change/Search is clicked) -->
+                    <div class="import-inline-search" id="import-search-panel-{{ loop.index0 }}">
+                        <div class="import-search-bar">
+                            <input type="text"
+                                   class="ios-input import-search-input"
+                                   id="import-search-input-{{ loop.index0 }}"
+                                   placeholder="Search TMDB..."
+                                   oninput="scheduleImportSearch({{ loop.index0 }})">
+                            <button type="button" class="import-search-close"
+                                    onclick="closeImportSearch({{ loop.index0 }})">✕</button>
                         </div>
-                    {% else %}
-                        <div class="import-no-match">
-                            <span>No match found</span>
-                        </div>
-                    {% endif %}
+                        <div class="import-search-results" id="import-search-results-{{ loop.index0 }}"></div>
+                    </div>
+
+                    <!-- Hidden fields submitted with the form -->
+                    <div id="import-fields-{{ loop.index0 }}">
+                        {% if m.match %}
+                        <input type="hidden" name="tmdb_id"      value="{{ m.match.tmdb_id }}"           {% if m.match.on_list %}disabled{% endif %}>
+                        <input type="hidden" name="media_type"   value="{{ m.match.media_type }}"        {% if m.match.on_list %}disabled{% endif %}>
+                        <input type="hidden" name="title"        value="{{ m.match.title }}"             {% if m.match.on_list %}disabled{% endif %}>
+                        <input type="hidden" name="year"         value="{{ m.match.year or '' }}"        {% if m.match.on_list %}disabled{% endif %}>
+                        <input type="hidden" name="poster_path"  value="{{ m.match.poster_path or '' }}" {% if m.match.on_list %}disabled{% endif %}>
+                        <input type="hidden" name="overview"     value="{{ m.match.overview or '' }}"    {% if m.match.on_list %}disabled{% endif %}>
+                        {% else %}
+                        <input type="hidden" name="tmdb_id"      value="" disabled>
+                        <input type="hidden" name="media_type"   value="" disabled>
+                        <input type="hidden" name="title"        value="" disabled>
+                        <input type="hidden" name="year"         value="" disabled>
+                        <input type="hidden" name="poster_path"  value="" disabled>
+                        <input type="hidden" name="overview"     value="" disabled>
+                        {% endif %}
+                    </div>
                 </article>
             {% endfor %}
         </div>
